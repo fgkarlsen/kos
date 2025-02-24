@@ -10,16 +10,13 @@
 E_NETWORK
 E_TIME_OUT
 
-요청종목코드 == _packet_head._code then E_OK
-
+req_code == _packet_head._code then E_OK
 
 _packet_head._code == "01" then E_NOT_FOUND
-_packet_head._code == "02" then E_REMOTE : 로직상 없음
-else                            E_UNKNOWN : 로직상 요청종목코드와 응답요청코드가 다른경우 발생
-
+_packet_head._code == "02" then E_REMOTE : not exist in the coding logic
+else                            E_UNKNOWN : req_code != res_code
 
 
 # local
 #define E_MEMORY        111
 #define E_NOT_FOUND     141
-
