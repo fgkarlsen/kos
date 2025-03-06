@@ -1,0 +1,24 @@
+# krecv_master.sh
+ktestrecv 프로세스를 이용하여 종목정보 파일을 저장하는 스크립트
+
+# 사전확인사항
+1. ~/.uninfo 존재 및 내용확인 : system_UNINFO_dir 정의확인 및 실제 위치 확인
+export OS=[LINUX or AIX]
+export system_UNINFO_dir=[UNINFO_DIR_LOCATION]
+export LD_LIBRARY_PATH=[LIBRARY_LOCATION]
+2. 종목정보 저장 위치 확인 : $system_UNINFO_dir/data/market/
+
+# 고객사 작업 - 스크립트 내용 변경(서버별 작업)
+1. config/app/krecv/start.cnf 의
+ksp_master, ksq_master, nxt_master (bind_addr, multi_addr, udp_port)를 확인하여 
+krecv_master.sh에 마지막 3줄의 내용을 수정
+$cmd {bind_addr} {multi_addr} {udp_port} ...
+ex. $cmd 10.120.130.78 233.38.231.1 11001 ...
+2. krecv_master.sh의 실행권한 설정 : chmod +x krecv_master.sh
+
+# krecv_master.sh 역할 및 스크립트 환경 설정
+1. ktestrecv로 실행되어있는 모든 프로세스 중지 : kstop.sh ktestrecv all
+2. ktestrecv로 종목정보 수신하여 $system_UNINFO_dir/data/market/ 에 일자별 저장
+3. crontab 에 등록 (환경에 맞게 설정 - shell script 위치, log 디렉토리 위치)
+3.1. ex. 5시에 기동
+3.1.1. 0 5 * * 1-5 /home/qot/cmd/krecv_master.sh >> /home/qot/log/krecv_master.dat 2>&1
