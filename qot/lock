@@ -48,22 +48,38 @@ init_app:
     g_uninfo_app._uni_handle->_ptr  = (char*)get_main_mem(g_mmfp);
     g_uninfo_app._uni_handle->_ptr2 = (char*)get_stat_mem(g_mmfp);
 
-link_uninfo_task(&g_uninfi_app):
-    set memory ptr
-    set mutex func
-        fn_mtx_lock - pthread_rwlock_timedwrlock(10ms)
-        fn_mtx_unlock - pthread_rwlock_unlock()
-    set issue ptr func
-        fn_issue_ptr_callback
-    set task callback func
-        fn_task_callback - exchanges/specs proc
-    set dist callback func
-        fn_dist_callback - exchanges/specs proc
+    link_uninfo_task(&g_uninfi_app):
+        set memory ptr
+        set mutex func
+            fn_mtx_lock - pthread_rwlock_timedwrlock(10s)
+            fn_mtx_unlock - pthread_rwlock_unlock()
+        set issue ptr func
+            fn_issue_ptr_callback
+        set task callback func
+            fn_task_callback - exchanges/specs proc
+        set dist callback func
+            fn_dist_callback - exchanges/specs proc
 
-set_recv_mq_cfg - kproc/start.cnf
-init_recv_mq - mq_open(name, O_RDONLY|O_CREAT, 0666, attr(mq_flags=0,mq_maxmsg=16384,mq_msgsize=16384))
-set_task_spec_cfg - task_spec.cnf
-init_spec_stat_mem
+    set_recv_mq_cfg - kproc/start.cnf
+    init_recv_mq - mq_open(name, O_RDONLY|O_CREAT, 0666, attr(mq_flags=0,mq_maxmsg=16384,mq_msgsize=16384))
+    set_task_spec_cfg - task_spec.cnf
+    init_spec_stat_mem
+
+do_it:
+    loop:
+        mq_reveive
+        find_task_spec_index
+        set_spec_stat
+        get main mem
+        increase tick_seq
+        _fn_lock (fn_mtx_lock) - 
+        _fn_on_spec (fn_task_callback) : conversion & copy
+            ex. task_quote_krx - proc_quote_krx / proc_quote_uni
+        _fn_unlock (fn_mtx_unlock)
+
+        
+
+
 
 
 
