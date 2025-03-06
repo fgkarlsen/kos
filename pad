@@ -1,0 +1,72 @@
+typedef int32_t gint32; // 4byte
+typedef uint64_t guint64; // 8byte
+
+typedef struct {
+    gint32 _date;
+    gint32 _hhmmss;
+    gint32 _usec;
+
+    
+    guint64 _prev_amt1;
+    guint64 _prev_amt2;
+    double _base_price;
+    double _prev_close;
+    double _prev_vol;
+    double _upper_limit;
+    double _lower_limit;
+    double _prev_highest_quote;
+    double _prev_lowest_quote;
+    char   _halt_flag;
+}
+
+
+typedef int32_t int32__; // 4byte
+typedef uint64_t uint64__; // 8byte
+
+typedef struct {
+    int32__ _dt;
+    int32__ _time;
+    int32__ _sec;
+
+    double _bp;
+    double _pc;
+    double _pv;
+    
+    uint64__ _pa1;
+    uint64__ _pa2;
+    double _ul;
+    double _ll;
+    double _phq;
+    double _plq;
+    char   _hf;
+}
+
+이구조체를 리눅스에서 전달하고 aix에서 받아서 메모리를 뒤집는데 그럼
+
+
+
+
+
+pthread_rwlock_t* p_mutex;
+struct timespec ts;
+clock_gettime(CLOCK_REALTIME &ts);
+ts.tv_sec=0;
+ts.tv_nsec += 100000;
+
+//여기서 ts.tv_nsec가 1000000000 인경우가 있을까??
+
+pthread_rwlock_timedrdlock(p_mutex, &ts);
+
+
+
+pthread_rwlock_t* p_mutex;
+struct timespec ts;
+clock_gettime(CLOCK_REALTIME &ts);
+
+//ts.tv_sec=0; // 이 부분 괜찮아?
+ts.tv_nsec += 100000;
+if (ts.tv_nsec >= 1000000000) {
+    ts.tv_sec += 1;
+    ts.tv_nsec -= 1000000000;
+}
+pthread_rwlock_timedrdlock(p_mutex, &ts);
