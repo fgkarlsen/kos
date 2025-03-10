@@ -1,0 +1,77 @@
+# IP, DNS 자동처리방식
+
+/etc/hosts 파일 - root 권한 필요
+192.168.1.100    example.com
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <regex.h>
+
+int is_ip_address(const char *str) {
+    struct sockaddr_in sa;
+    return inet_pton(AF_INET, str, &(sa.sin_addr)) != 0;
+}
+
+void resolve_dns_to_ip(const char *hostname) {
+    struct addrinfo hints, *res;
+    int err;
+
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_STREAM;
+
+    err = getaddrinfo(hostname, NULL, &hints, &res);
+    if (err != 0) {
+        printf("DNS 조회 실패: %s\n", gai_strerror(err));
+        return;
+    }
+
+    if (res->ai_family == AF_INET) {
+        char ipstr[INET_ADDRSTRLEN];
+        struct sockaddr_in *sockaddr_in = (struct sockaddr_in *) res->ai_addr;
+        inet_ntop(AF_INET, &sockaddr_in->sin_addr, ipstr, sizeof(ipstr));
+        printf("IP 주소: %s\n", ipstr);
+    }
+
+    freeaddrinfo(res);
+}
+
+void process_input(const char *input) {
+    if (is_ip_address(input)) {
+        printf("입력된 값은 IP 주소입니다: %s\n", input);
+    } else {
+        printf("입력된 값은 DNS 이름입니다: %s\n", input);
+        resolve_dns_to_ip(input);
+    }
+}
+
+int main() {
+    const char *input = "www.example.com";  // 입력값을 변경해 테스트
+    process_input(input);
+    return 0;
+}
+
+
+# getaddrinfo 동작
+/etc/nsswitch.conf 에 설정된 규칙을 따라 DNS 해석 순서 결정
+ex. hosts: files dns
+1. 호스트 파일을 통한 해석: /etc/hosts - 192.168.1.100    example.com
+2. DNS 서버 사용
+
+
+# DNS 서버를 설정하는 파일
+/etc/resolv.conf 파일 확인
+/etc/resolv.conf 
+
+cat /etc/resolv.conf
+nameserver 8.8.8.8
+
+작동확인 명령어
+getent hosts www.google.com - hosts
+nslookup google.com - DNS
+
+# 테스트
+LINUX, AIX - IP, DNS 정상동작 여부 확인
