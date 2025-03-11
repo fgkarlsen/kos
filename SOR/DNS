@@ -75,3 +75,7 @@ nslookup google.com - DNS
 
 # 테스트
 LINUX, AIX - IP, DNS 정상동작 여부 확인
+
+
+
+# bind 설치

@@ -1,6 +1,6 @@
 "use client";
 
-import ArbitrageDashboard from "@/components/ArbitrageDashboard";
+import ArbitrageDashboard from "../components/ArbitrageDashboard";
 
 export default function Home() {
   return (
