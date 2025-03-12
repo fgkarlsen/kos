@@ -1,13 +1,20 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
 import httpx
 
 app = FastAPI()
 
+origins = [
+    "https://crispy-xylophone-7v95jpqjw53pjv9-3000.app.github.dev",
+    "https://crispy-xylophone-7v95jpqjw53pjv9-8000.app.github.dev",
+    "http://localhost:3000",
+]
+
 # CORS 설정 (모든 도메인 허용)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 보안을 위해 실제 도메인만 허용하는 것이 좋음
+    allow_origins=origins,  # 보안을 위해 실제 도메인만 허용하는 것이 좋음
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

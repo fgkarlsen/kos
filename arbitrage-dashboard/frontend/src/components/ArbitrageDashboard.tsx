@@ -4,13 +4,14 @@ import { useEffect, useState, useRef } from "react";
 export default function ArbitrageDashboard() {
   const [upbitPrice, setUpbitPrice] = useState(0);
   const [binancePrice, setBinancePrice] = useState(0);
-  const [exchangeRate, setExchangeRate] = useState(1300);
+  const [binanceFuturesPrice, setBinanceFuturesPrice] = useState(0);
+  const [exchangeRate, setExchangeRate] = useState(1500);
   const [binanceUsdPrice, setBinanceUsdPrice] = useState(0);
   const [lastUpdate, setLastUpdate] = useState('');
   const [isClient, setIsClient] = useState(false);
   const exchangeRateRef = useRef(exchangeRate);
-  const [threshold, setThreshold] = useState(1.0); 
-  const [recordHistory, setRecordHistory] = useState([]); 
+  const [threshold, setThreshold] = useState(20.0);
+  const [recordHistory, setRecordHistory] = useState([]);
 
   useEffect(() => {
     setIsClient(true);
@@ -26,6 +27,7 @@ export default function ArbitrageDashboard() {
   useEffect(() => {
     const upbitSocket = new WebSocket("wss://api.upbit.com/websocket/v1");
     const binanceSocket = new WebSocket("wss://stream.binance.com:9443/ws/xrpusdt@trade");
+    const binanceFuturesSocket = new WebSocket("wss://fstream.binance.com/ws/xrpusdt@trade");
 
     const fetchExchangeRate = async () => {
       try {
@@ -89,14 +91,27 @@ export default function ArbitrageDashboard() {
       }
     };
 
+    binanceFuturesSocket.onmessage = (event) => {
+      try {
+        const parsedData = JSON.parse(event.data);
+        if (parsedData && parsedData.p) {
+          setBinanceFuturesPrice(parseFloat(parsedData.p) * exchangeRateRef.current);
+        }
+      } catch (error) {
+        console.error("바이낸스 선물 데이터 오류:", error);
+      }
+    };
+
     return () => {
       clearInterval(exchangeInterval);
       upbitSocket.close();
       binanceSocket.close();
+      binanceFuturesSocket.close();
     };
   }, []);
 
   const arbitrage = upbitPrice && binancePrice ? ((upbitPrice - binancePrice) / binancePrice) * 100 : 0;
+  const futuresArbitrage = binancePrice && binanceFuturesPrice ? ((binanceFuturesPrice - binancePrice) / binancePrice) * 100 : 0;
 
   useEffect(() => {
     if (Math.abs(arbitrage) >= threshold) {
@@ -117,10 +132,14 @@ export default function ArbitrageDashboard() {
       <h1 className="text-xl font-bold mb-4">리플 차익거래 대시보드</h1>
       <div>업비트 가격: {upbitPrice.toLocaleString()} KRW</div>
       <div>바이낸스 가격: {binancePrice.toLocaleString()} KRW</div>
+      <div>바이낸스 선물가격: {binanceFuturesPrice.toLocaleString()} KRW</div>
       <div>바이낸스 USD 가격: ${binanceUsdPrice.toFixed(4)}</div>
       <div>현재 환율 (USDT/KRW): {exchangeRate.toFixed(2)}</div>
       <div className={`mt-2 text-lg ${arbitrage > 0 ? "text-green-500" : "text-red-500"}`}>
-        차익률: {arbitrage.toFixed(2)}%
+        업비트-바이낸스 차익률: {arbitrage.toFixed(2)}%
+      </div>
+      <div className={`mt-2 text-lg ${futuresArbitrage > 0 ? "text-green-500" : "text-red-500"}`}>
+        바이낸스 현선 차익률: {futuresArbitrage.toFixed(2)}%
       </div>
 
       {isClient && (
@@ -140,6 +159,27 @@ export default function ArbitrageDashboard() {
       <button className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600" onClick={() => window.location.reload()}>
         새로고침
       </button>
+
+    <div className="mt-6">
+    <h2 className="text-lg font-semibold">차익 거래 기록</h2>
+    <div className="border rounded p-2 mt-2 text-sm">
+      {recordHistory.length === 0 ? (
+        <p className="text-gray-500">기록 없음</p>
+      ) : (
+        <ul>
+          {recordHistory.slice().reverse().map((record, index) => (
+                <li key={index} className="border-b py-1">
+                  <span className="font-semibold">{record.time}</span> - 
+                  <span className="font-semibold">{new Date(record.time*1000).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit', fractionalSecondDigits: 3 })}</span> - 
+                  업비트: {record.upbit.toLocaleString()} KRW, 
+                  바이낸스: {record.binance.toLocaleString()} KRW,
+                  차익률: {record.arbitrage}%
+                </li>
+          ))}
+        </ul>
+      )}
+    </div>
+    </div>
     </div>
   );
 }
