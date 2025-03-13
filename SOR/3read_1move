@@ -1,0 +1,39 @@
+#include <stdio.h>
+#include <string.h>
+#include <time.h>
+
+#define SIZE 100000
+
+int main() {
+    int src1[SIZE], src2[SIZE], src3[SIZE], dest[SIZE], buffer[SIZE * 3];
+    for (int i = 0; i < SIZE; i++) {
+        src1[i] = i;
+        src2[i] = i * 2;
+        src3[i] = i * 3;
+    }
+
+    clock_t start, end;
+
+    // 방법 1: 개별 복사 (3번 복사)
+    start = clock();
+    for (int i = 0; i < SIZE; i++) {
+        dest[i] = src1[i];
+        dest[i] += src2[i];
+        dest[i] += src3[i];
+    }
+    end = clock();
+    printf("개별 복사 방식 시간: %lf초\n", (double)(end - start) / CLOCKS_PER_SEC);
+
+    // 방법 2: 중간 버퍼 후 일괄 복사
+    start = clock();
+    for (int i = 0; i < SIZE; i++) {
+        buffer[i] = src1[i];
+        buffer[i + SIZE] = src2[i];
+        buffer[i + 2 * SIZE] = src3[i];
+    }
+    memcpy(dest, buffer, SIZE * sizeof(int));
+    end = clock();
+    printf("중간 버퍼 방식 시간: %lf초\n", (double)(end - start) / CLOCKS_PER_SEC);
+
+    return 0;
+}

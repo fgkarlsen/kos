@@ -25,8 +25,8 @@ export default function ArbitrageDashboard() {
   }, [exchangeRate, binanceUsdPrice]);
 
   useEffect(() => {
-    const upbitSocket = new WebSocket("wss://api.upbit.com/websocket/v1");
-    const binanceSocket = new WebSocket("wss://stream.binance.com:9443/ws/xrpusdt@trade");
+    const upbitSocket          = new WebSocket("wss://api.upbit.com/websocket/v1");
+    const binanceSocket        = new WebSocket("wss://stream.binance.com:9443/ws/xrpusdt@trade");
     const binanceFuturesSocket = new WebSocket("wss://fstream.binance.com/ws/xrpusdt@trade");
 
     const fetchExchangeRate = async () => {
@@ -55,7 +55,7 @@ export default function ArbitrageDashboard() {
 
     fetchExchangeRate();
     fetchUpbitPrice();
-    const exchangeInterval = setInterval(fetchExchangeRate, 900000);
+    const exchangeInterval = setInterval(fetchExchangeRate, 800000);
 
     upbitSocket.onopen = () => {
       upbitSocket.send(JSON.stringify([{ ticket: "test" }, { type: "ticker", codes: ["KRW-XRP"] }]));
