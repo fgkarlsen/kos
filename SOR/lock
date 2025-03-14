@@ -1,3 +1,5 @@
+kproc.c:227 - err_log("lock fail issue %s", issuep->_code);
+
 # kmem.c
 main -> clear_mem(1) -> clear_mem1 -> clear_mem2 -> save_clear_time -> init_mem
 

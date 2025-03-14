@@ -1,5 +1,6 @@
 {
     "files.associations": {
-        "dns": "c"
+        "dns": "c",
+        "fork": "c"
     }
 }

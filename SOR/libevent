@@ -1,0 +1,128 @@
+sudo apt-get install libevent-dev
+
+gcc -o tcp_server tcp_server.c -levent
+./tcp_server
+
+libevent
+주요 특징:
+이벤트 기반으로 I/O를 처리하는 라이브러리로, 네트워크 I/O와 타이머, 시그널 처리 등을 처리할 수 있습니다.
+
+멀티 플랫폼 지원 (Linux, Windows, macOS 등)
+매우 경량이며 간단한 API를 제공합니다.
+장점:
+libevent는 단순하고 직관적인 API를 제공하여, 이벤트 기반 비동기 프로그래밍을 시작하기 쉽습니다.
+높은 성능과 메모리 효율성을 제공합니다. 특히 단일 스레드로도 높은 성능을 낼 수 있습니다.
+I/O 멀티플렉싱 (select, poll, epoll 등)을 사용하여 높은 성능을 발휘합니다.
+
+단점:
+기능 범위가 다른 라이브러리에 비해 다소 제한적일 수 있습니다. 예를 들어, libuv처럼 다양한 플랫폼에서 파일 I/O를 처리하는 기능은 상대적으로 적을 수 있습니다.
+추천 시나리오:
+네트워크 서버나 비동기 처리가 필요한 시스템에서 간단한 구현을 원할 경우.
+C언어로 빠르게 구현해야 할 때 유용하며, 직관적이고 단순한 API를 원할 경우.
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <event2/event.h>
+#include <event2/listener.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
+// 클라이언트 연결이 이루어졌을 때 호출될 콜백 함수
+void accept_cb(evutil_socket_t listener, short event, void *arg) {
+    struct sockaddr_in client_addr;
+    socklen_t client_len = sizeof(client_addr);
+    evutil_socket_t client_fd = accept(listener, (struct sockaddr *)&client_addr, &client_len);
+    
+    if (client_fd == -1) {
+        perror("Accept failed");
+        return;
+    }
+
+    // 클라이언트의 IP와 포트를 출력
+    char client_ip[INET_ADDRSTRLEN];
+    inet_ntop(AF_INET, &client_addr.sin_addr, client_ip, sizeof(client_ip));
+    printf("Accepted connection from %s:%d\n", client_ip, ntohs(client_addr.sin_port));
+
+    // 클라이언트로부터 데이터를 읽을 수 있도록 설정 (비동기)
+    struct event_base *base = (struct event_base *)arg;
+    struct event *ev = event_new(base, client_fd, EV_READ | EV_PERSIST, read_cb, (void *)(intptr_t)client_fd);
+    event_add(ev, NULL);
+}
+
+// 클라이언트로부터 데이터를 읽어 처리할 콜백 함수
+void read_cb(evutil_socket_t fd, short event, void *arg) {
+    char buffer[1024];
+    ssize_t n = read(fd, buffer, sizeof(buffer) - 1);
+    
+    if (n <= 0) {
+        if (n == 0) {
+            printf("Client disconnected\n");
+        } else {
+            perror("Read error");
+        }
+        close(fd);
+        return;
+    }
+    
+    buffer[n] = '\0';  // Null-terminate the buffer
+    printf("Received message: %s\n", buffer);
+    
+    // 클라이언트로 응답을 보냄
+    write(fd, "Message received\n", 18);
+}
+
+int main() {
+    // 이벤트 루프를 위한 base 생성
+    struct event_base *base = event_base_new();
+    if (!base) {
+        fprintf(stderr, "Could not initialize libevent!\n");
+        return 1;
+    }
+
+    // 서버 소켓 생성
+    evutil_socket_t listener = socket(AF_INET, SOCK_STREAM, 0);
+    if (listener < 0) {
+        perror("Listener socket failed");
+        return 1;
+    }
+
+    struct sockaddr_in sin;
+    memset(&sin, 0, sizeof(sin));
+    sin.sin_family = AF_INET;
+    sin.sin_port = htons(12345);  // 서버 포트 12345
+    sin.sin_addr.s_addr = INADDR_ANY;  // 모든 IP 주소에서 연결을 수락
+
+    if (bind(listener, (struct sockaddr *)&sin, sizeof(sin)) < 0) {
+        perror("Bind failed");
+        return 1;
+    }
+
+    if (listen(listener, 16) < 0) {
+        perror("Listen failed");
+        return 1;
+    }
+
+    // accept_cb 콜백 함수를 이벤트로 등록
+    struct event *listener_event = evconnlistener_new_bind(
+        base, accept_cb, (void *)base, LEV_OPT_REUSEABLE | LEV_OPT_CLOSE_ON_FREE,
+        -1, (struct sockaddr *)&sin, sizeof(sin)
+    );
+
+    if (!listener_event) {
+        perror("Could not create listener");
+        return 1;
+    }
+
+    // 이벤트 루프 실행
+    printf("Server is running on port 12345...\n");
+    event_base_dispatch(base);
+
+    // 자원 해제
+    evconnlistener_free(listener_event);
+    event_base_free(base);
+
+    return 0;
+}
