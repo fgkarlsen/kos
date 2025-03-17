@@ -1,9 +1,30 @@
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, WebSocket, WebSocketDisconnect
+import asyncio
+import json
 
 import httpx
 
 app = FastAPI()
+
+# 거래소 및 코인 설정
+exchanges = ["upbit", "bithumb", "binance", "bybit", "kucoin", "okx", "mexc"]
+coins = ["XRP", "TRX", "LTC"]
+
+# 거래소 API 엔드포인트 예제
+exchange_urls = {
+    "upbit": "wss://api.upbit.com/websocket/v1",
+    "bithumb": "wss://pubwss.bithumb.com/pub/ws",
+    "binance": "wss://stream.binance.com:9443/ws",
+    "bybit": "wss://stream.bybit.com/v5/public/spot",
+    "kucoin": "wss://ws-api.kucoin.com/endpoint",
+    "okx": "wss://ws.okx.com:8443/ws/v5/public",
+    "mexc": "wss://wbs.mexc.com/ws"
+}
+
+# 실시간 가격 저장
+prices = {exchange: {coin: 0.0 for coin in coins} for exchange in exchanges}
+
 
 origins = [
     "https://crispy-xylophone-7v95jpqjw53pjv9-3000.app.github.dev",
@@ -32,6 +53,80 @@ EXCHANGES = {
 
 cached_coins = {}
 
+# 거래소 웹소켓 연결 함수
+async def connect_exchange_ws(exchange, coin):
+    url = exchange_urls[exchange]
+    try:
+        async with asyncio.open_connection(url) as (reader, writer):
+            if exchange == "upbit":
+                payload = json.dumps([{"ticket": "test"}, {"type": "ticker", "codes": [f"KRW-{coin}"]}])
+            elif exchange == "bithumb":
+                payload = json.dumps({"type": "ticker", "symbols": [f"{coin}_KRW"], "tickTypes": ["1M"]})
+            elif exchange == "binance":
+                payload = f"{{\"method\": \"SUBSCRIBE\", \"params\": [\"{coin.lower()}usdt@trade\"], \"id\": 1}}"
+            else:
+                payload = json.dumps({"subscribe": f"{coin}_USDT"})
+            
+            writer.write(payload.encode())
+            await writer.drain()
+
+            while True:
+                data = await reader.read(1024)
+                try:
+                    message = json.loads(data.decode())
+                    if exchange == "upbit" and "trade_price" in message:
+                        prices[exchange][coin] = message["trade_price"]
+                    elif exchange == "bithumb" and "content" in message:
+                        prices[exchange][coin] = float(message["content"]["closePrice"])
+                    elif exchange == "binance" and "p" in message:
+                        prices[exchange][coin] = float(message["p"])
+                    
+                    print(f"[{exchange}] {coin} 가격: {prices[exchange][coin]}")
+                except Exception as e:
+                    print(f"데이터 처리 오류: {e}")
+                    continue
+    except Exception as e:
+        print(f"{exchange} 연결 실패: {e}")
+
+# 각 거래소와 코인에 대해 웹소켓 연결 시작
+@app.on_event("startup")
+async def start_ws_connections():
+    tasks = []
+    for exchange in exchanges:
+        for coin in coins:
+            tasks.append(connect_exchange_ws(exchange, coin))
+    asyncio.create_task(asyncio.gather(*tasks))
+
+# 프론트엔드와 웹소켓 통신
+@app.websocket("/ws/arbitrage")
+async def websocket_endpoint(websocket: WebSocket):
+    await websocket.accept()
+    try:
+        while True:
+            # 실시간 차익률 계산
+            result = []
+            for coin in coins:
+                for i, ex1 in enumerate(exchanges):
+                    for j, ex2 in enumerate(exchanges):
+                        if i >= j:  # 중복 계산 방지
+                            continue
+                        price1 = prices[ex1][coin]
+                        price2 = prices[ex2][coin]
+                        if price1 > 0 and price2 > 0:
+                            spread = ((price1 - price2) / price2) * 100
+                            result.append({
+                                "coin": coin,
+                                "exchange1": ex1,
+                                "exchange2": ex2,
+                                "price1": price1,
+                                "price2": price2,
+                                "spread": round(spread, 2)
+                            })
+            # 프론트엔드로 데이터 전송
+            await websocket.send_json(result)
+            await asyncio.sleep(1)
+    except WebSocketDisconnect:
+        print("클라이언트 연결 해제")
 
 
 @app.get("/get-coins")
