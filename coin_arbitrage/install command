@@ -38,6 +38,8 @@ gh codespace stop -c crispy-xylophone-7v95jpqjw53pjv9
 gh codespace start -c crispy-xylophone-7v95jpqjw53pjv9
 gh codespace ports visibility 8000:public -c crispy-xylophone-7v95jpqjw53pjv9
 
+pip install websockets
+
 
 gh auth status
 

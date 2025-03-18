@@ -1,6 +1,7 @@
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, Query, WebSocket, WebSocketDisconnect
 import asyncio
+import websockets
 import json
 
 import httpx
@@ -21,6 +22,35 @@ exchange_urls = {
     "okx": "wss://ws.okx.com:8443/ws/v5/public",
     "mexc": "wss://wbs.mexc.com/ws"
 }
+
+async def connect_exchange(name, url):
+    try:
+        async with websockets.connect(url) as websocket:
+            print(f"{name.capitalize()} 연결 성공!")
+            while True:
+                response = await websocket.recv()
+                print(f"{name} 데이터: {response}")
+    except Exception as e:
+        print(f"{name.capitalize()} 연결 실패: {e}")
+
+async def start_all_connections():
+    tasks = [
+        connect_exchange(name, url)
+        for name, url in exchange_urls.items()
+    ]
+    await asyncio.gather(*tasks)
+
+@app.websocket("/ws/{exchange}/{coin}")
+async def price_ws(websocket: WebSocket, exchange: str, coin: str):
+    await websocket.accept()
+    try:
+        while True:
+            price = prices[exchange][coin]
+            await websocket.send_json({"price": price})
+            await asyncio.sleep(1)
+    except WebSocketDisconnect:
+        print(f"{exchange}-{coin} 클라이언트 연결 해제")
+
 
 # 실시간 가격 저장
 prices = {exchange: {coin: 0.0 for coin in coins} for exchange in exchanges}
@@ -88,17 +118,8 @@ async def connect_exchange_ws(exchange, coin):
     except Exception as e:
         print(f"{exchange} 연결 실패: {e}")
 
-# 각 거래소와 코인에 대해 웹소켓 연결 시작
-@app.on_event("startup")
-async def start_ws_connections():
-    tasks = []
-    for exchange in exchanges:
-        for coin in coins:
-            tasks.append(connect_exchange_ws(exchange, coin))
-    asyncio.create_task(asyncio.gather(*tasks))
-
 # 프론트엔드와 웹소켓 통신
-@app.websocket("/ws/arbitrage")
+@app.websocket("/ws/")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
     try:
@@ -199,6 +220,14 @@ async def get_price(exchange: str = Query(...), coin: str = Query(...)):
         return {"error": f"가격 조회 실패: {e}"}
 
 
+# if __name__ == "__main__":
+#     asyncio.run(start_all_connections())
+
+@app.on_event("startup")
+async def on_startup():
+    asyncio.create_task(start_all_connections())
+
+    
 
 UPBIT_TICKER_URL = "https://api.upbit.com/v1/ticker?markets=KRW-XRP"
 UPBIT_USDT_URL = "https://api.upbit.com/v1/ticker?markets=KRW-USDT"
