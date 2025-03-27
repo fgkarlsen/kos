@@ -1,0 +1,4 @@
+16:05:36.900071 klibSOREng.c   :kSORlib_QotOp:0326] F [F-SOR-INI-QOT] QOT_Open() Failed :: 1stIP[], 2ndIP[], PortNo[7081], Timeout[1000] LBYn[N] MultiThread[N] pQot[0]
+16:05:36.900321 kLibLog.c      :ReopenLog_LC :0585] E open("/soradm/ksor/eng//log/ksor_250326_NoProcNm_p54070410.log") failed:[Permission denied]
+16:05:36.900373 kLibLog.c      :ReopenLog_LC :0615] E open("/soradm/ksor/eng//ksor_250326_ErrLog.log") failed:[Permission denied]
+
