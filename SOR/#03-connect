@@ -1,0 +1,70 @@
+int tconnect_with_timeout(RPC* rp)
+{
+    /*
+     *  Change blocking --> non-blocking
+     */
+    // Get state
+    int org_stat;
+    if ((org_stat = fcntl(rp->fd, F_GETFL, NULL)) < 0) {
+        err_log("fcntl(F_GETFL) error. %s(%d)", strerror(errno), errno);
+        return -1;
+    }
+
+    // Set non-block state
+    if (fcntl(rp->fd, F_SETFL, org_stat | O_NONBLOCK) < 0) {
+        err_log("fcntl(F_SETFL-block) error. %s(%d)", strerror(errno), errno);
+        return -1;
+    }
+
+    struct sockaddr_in in_addr;
+
+    memset(&in_addr, 0, sizeof(in_addr));
+
+    in_addr.sin_family = AF_INET;
+    in_addr.sin_addr.s_addr = inet_addr(rp->addr);
+    in_addr.sin_port = htons(rp->port);
+
+    if (connect(rp->fd, (const struct sockaddr*)&in_addr, sizeof(in_addr)) == 0) {
+        // Connection success
+        rp->subfd = rp->fd;
+        return 1;
+    }
+    if (errno != EINPROGRESS) {
+        err_log("connect() error. %s(%d)", strerror(errno), errno);
+        return -1;
+    }
+
+    // Set timeout
+    fd_set rset, wset;
+
+    FD_ZERO(&rset);
+    FD_SET(rp->fd, &rset);
+    FD_SET(rp->fd, &wset);
+
+    struct timeval tv;
+    tv.tv_sec  =  rp->timeout / 1000;
+    tv.tv_usec = (rp->timeout % 1000) * 1000;
+
+    if (select(rp->fd+1, &rset, &wset, NULL, &tv) <= 0) {
+        err_log("connect() error(timeout) : %s", strerror(errno));
+        return -2;
+    }
+
+    // Check connection error
+    int err;
+    socklen_t len = sizeof(err);
+    getsockopt(rp->fd, SOL_SOCKET, SO_ERROR, (char*)&err, &len);
+    if (err) {
+        err_log("connection error [%d].", err);
+        return -1;
+    }
+
+    // Set original state
+    if (fcntl(rp->fd, F_SETFL, org_stat) < 0) {
+        err_log("fcntl(F_SETFL-org) error. %s(%d)", strerror(errno), errno);
+        return -1;
+    }
+
+    rp->subfd = rp->fd;
+    return 1;
+}

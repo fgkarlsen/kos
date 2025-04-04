@@ -1,0 +1,19 @@
+# connect multi qot servers
+qot server list
+ex. 5일때 LB: PID%5 로 동작
+
+#01. config.json
+: qotRcpInfo
+
+
+void *pQot=NULL;
+kSORlib_QotOpen(&pQot); -> QOT_Open(1IP, 2IP, portno, timeout);
+kSORlib_VenueDcs( , pQot);
+kSORlib_Close(&pQot); -> QOT_Close(pQot)
+
+QOT Server IP를 2개 입력했을때
+QOT Server1 접속가능 : 1번만 접속한 상태로 진행
+QOT Server2 접속가능 : 접속 실패
+QOT Server1,2 접속가능 : 1,2번 둘다 접속
+
+

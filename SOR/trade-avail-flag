@@ -30,3 +30,17 @@ HaltYn - 거래정지여부(A0) in KRX,NXT -> '현재 관련 처리 없음'
 금일날짜_status.log에 작성되는 종목개수는 경쟁매매가능한 종목개수가 작성
 
 
+S51 IOC
+중간가 없으니 거부
+
+
+1. 중간가 51 IOC - default -> 01로 나옴
+2. 룰 사용 합산이 안맞는다. 13-14건이 차이가 남
+대쉬보드에 나오는 룰별 건수 합산하고 총합산이 다르다.
+
+로그상에서도 
+rule name : default / rule step 5
+rule name : / rule step 4 : 01
+
+
+
