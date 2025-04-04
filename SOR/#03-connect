@@ -68,3 +68,81 @@ int tconnect_with_timeout(RPC* rp)
     rp->subfd = rp->fd;
     return 1;
 }
+
+
+
+int tconnect_with_timeout(RPC* rp)
+{
+    int org_stat = fcntl(rp->fd, F_GETFL, 0);
+    if (org_stat < 0) {
+        err_log("fcntl(F_GETFL) error: %s(%d)", strerror(errno), errno);
+        return -1;
+    }
+
+    // Set non-blocking
+    if (fcntl(rp->fd, F_SETFL, org_stat | O_NONBLOCK) < 0) {
+        err_log("fcntl(F_SETFL) error (non-block): %s(%d)", strerror(errno), errno);
+        return -1;
+    }
+
+    struct sockaddr_in in_addr;
+    memset(&in_addr, 0, sizeof(in_addr));
+    in_addr.sin_family = AF_INET;
+    in_addr.sin_addr.s_addr = inet_addr(rp->addr);
+    in_addr.sin_port = htons(rp->port);
+
+    errno = 0;
+    if (connect(rp->fd, (struct sockaddr*)&in_addr, sizeof(in_addr)) == 0) {
+        // Connected immediately
+        goto success;
+    }
+
+    if (errno != EINPROGRESS) {
+        err_log("connect() immediate fail: %s(%d)", strerror(errno), errno);
+        return -1;
+    }
+
+    // Wait with select
+    fd_set rset, wset;
+    FD_ZERO(&rset);
+    FD_ZERO(&wset);
+    FD_SET(rp->fd, &rset);
+    FD_SET(rp->fd, &wset);
+
+    struct timeval tv;
+    tv.tv_sec  = rp->timeout / 1000;
+    tv.tv_usec = (rp->timeout % 1000) * 1000;
+
+    int sel_ret = select(rp->fd + 1, &rset, &wset, NULL, &tv);
+    if (sel_ret == 0) {
+        err_log("connect() timeout after %d ms", rp->timeout);
+        return -2;
+    }
+    if (sel_ret < 0) {
+        err_log("select() error: %s(%d)", strerror(errno), errno);
+        return -1;
+    }
+
+    // Check for socket error
+    int err = 0;
+    socklen_t len = sizeof(err);
+    if (getsockopt(rp->fd, SOL_SOCKET, SO_ERROR, &err, &len) < 0) {
+        err_log("getsockopt() error: %s(%d)", strerror(errno), errno);
+        return -1;
+    }
+
+    if (err != 0) {
+        err_log("connection failed (SO_ERROR): %s(%d)", strerror(err), err);
+        return -1;
+    }
+
+success:
+    // Restore original flags
+    if (fcntl(rp->fd, F_SETFL, org_stat) < 0) {
+        err_log("fcntl(F_SETFL restore) error: %s(%d)", strerror(errno), errno);
+        return -1;
+    }
+
+    rp->subfd = rp->fd;
+    return 1;
+}
