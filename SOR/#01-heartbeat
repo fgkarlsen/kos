@@ -21,14 +21,5 @@ typedef struct {
     } svr
 } QOT;
 
-typedef struct {
-    API_MODE api_mode;
-    int active_svr;
-    int ecode;
-    union {
-        void *p_local;
-        void **p_remote;
-    } svr;
-    int remote_svr_count;
-} QOT;
+
 

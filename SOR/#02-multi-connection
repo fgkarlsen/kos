@@ -4,7 +4,195 @@ ex. 5일때 LB: PID%5 로 동작
 
 #01. config.json
 : qotRcpInfo
+{
+    "info" : {
+        "svrList" : [
+            {
+                "ip" : "10.10.10.10",
+                "port" : 1111
+            },
+            {
+                "ip" : "10.10.10.10",
+                "port" : 1112
+            },
+            {
+                "ip" : "10.10.10.10",
+                "port" : 1113
+            }
+        ]
+    }
+}
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <parson.h>
+
+typedef struct {
+    char **ips;
+    int *ports;
+    size_t count;
+} ServerList;
+
+ServerList parse_server_list(const char *json_string) {
+    ServerList result = {NULL, NULL, 0};
+
+    JSON_Value *root_value = json_parse_string(json_string);
+    if (root_value == NULL) {
+        fprintf(stderr, "JSON 파싱 오류\n");
+        return result;
+    }
+
+    JSON_Object *root_object = json_object(root_value);
+    JSON_Object *info_object = json_object_get_object(root_object, "info");
+    JSON_Array *svr_list_array = json_object_get_array(info_object, "svrList");
+
+    if (svr_list_array == NULL) {
+        fprintf(stderr, "svrList 배열을 찾을 수 없습니다.\n");
+        json_value_free(root_value);
+        return result;
+    }
+
+    size_t server_count = json_array_get_count(svr_list_array);
+    result.count = server_count;
+
+    result.ips = (char **)malloc(sizeof(char *) * server_count);
+    result.ports = (int *)malloc(sizeof(int) * server_count);
+
+    if (result.ips == NULL || result.ports == NULL) {
+        fprintf(stderr, "메모리 할당 오류\n");
+        if (result.ips) free(result.ips);
+        if (result.ports) free(result.ports);
+        json_value_free(root_value);
+        return result;
+    }
+
+    for (size_t i = 0; i < server_count; i++) {
+        JSON_Object *server_object = json_array_get_object(svr_list_array, i);
+        const char *ip = json_object_get_string(server_object, "ip");
+        int port = (int)json_object_get_number(server_object, "port");
+
+        result.ips[i] = strdup(ip);
+        result.ports[i] = port;
+    }
+
+    json_value_free(root_value);
+    return result;
+}
+
+int main() {
+
+    ServerList server_list = parse_server_list(json_data);
+
+    if (server_list.ips != NULL) {
+        for (size_t i = 0; i < server_list.count; i++) {
+            printf("IP: %s, Port: %d\n", server_list.ips[i], server_list.ports[i]);
+            free(server_list.ips[i]); // strdup으로 할당된 메모리 해제
+        }
+        free(server_list.ips);
+        free(server_list.ports);
+    }
+
+    return 0;
+}
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <parson.h>
+
+typedef struct {
+    int active_svr;
+    union {
+        void **p_remote;
+    } svr;
+    int remote_svr_count;
+} QQ;
+
+QQ* parse_server_list_to_qq(const char *json_string) {
+    QQ *qq = (QQ *)malloc(sizeof(QQ));
+    if (qq == NULL) {
+        fprintf(stderr, "QQ 구조체 메모리 할당 오류\n");
+        return NULL;
+    }
+
+    qq->active_svr = 0;
+    qq->svr.p_remote = NULL;
+    qq->remote_svr_count = 0;
+
+    JSON_Value *root_value = json_parse_string(json_string);
+    if (root_value == NULL) {
+        fprintf(stderr, "JSON 파싱 오류\n");
+        free(qq);
+        return NULL;
+    }
+
+    JSON_Object *root_object = json_object(root_value);
+    JSON_Object *info_object = json_object_get_object(root_object, "info");
+    JSON_Array *svr_list_array = json_object_get_array(info_object, "svrList");
+
+    if (svr_list_array == NULL) {
+        fprintf(stderr, "svrList 배열을 찾을 수 없습니다.\n");
+        json_value_free(root_value);
+        free(qq);
+        return NULL;
+    }
+
+    size_t server_count = json_array_get_count(svr_list_array);
+    qq->remote_svr_count = (int)server_count;
+
+    qq->svr.p_remote = (void **)malloc(sizeof(char *) * server_count);
+    if (qq->svr.p_remote == NULL) {
+        fprintf(stderr, "메모리 할당 오류\n");
+        json_value_free(root_value);
+        free(qq);
+        return NULL;
+    }
+
+    for (size_t i = 0; i < server_count; i++) {
+        JSON_Object *server_object = json_array_get_object(svr_list_array, i);
+        const char *ip = json_object_get_string(server_object, "ip");
+        qq->svr.p_remote[i] = strdup(ip); // IP 주소 복사
+    }
+
+    json_value_free(root_value);
+    return qq;
+}
+
+int main() {
+    const char *json_data = "{"
+                            "    \"info\" : {"
+                            "        \"svrList\" : ["
+                            "            {"
+                            "                \"ip\" : \"10.10.10.10\","
+                            "                \"port\" : 1111"
+                            "            },"
+                            "            {"
+                            "                \"ip\" : \"10.10.10.10\","
+                            "                \"port\" : 1112"
+                            "            },"
+                            "            {"
+                            "                \"ip\" : \"10.10.10.10\","
+                            "                \"port\" : 1113"
+                            "            }"
+                            "        ]"
+                            "    }"
+                            "}";
+
+    QQ *qq = parse_server_list_to_qq(json_data);
+
+    if (qq != NULL && qq->svr.p_remote != NULL) {
+        for (int i = 0; i < qq->remote_svr_count; i++) {
+            printf("IP: %s\n", (char *)qq->svr.p_remote[i]);
+            free(qq->svr.p_remote[i]); // IP 주소 메모리 해제
+        }
+        free(qq->svr.p_remote); // p_remote 메모리 해제
+        free(qq); // qq 메모리 해제
+    }
+
+    return 0;
+}
 
 void *pQot=NULL;
 kSORlib_QotOpen(&pQot); -> QOT_Open(1IP, 2IP, portno, timeout);
@@ -12,8 +200,42 @@ kSORlib_VenueDcs( , pQot);
 kSORlib_Close(&pQot); -> QOT_Close(pQot)
 
 QOT Server IP를 2개 입력했을때
-QOT Server1 접속가능 : 1번만 접속한 상태로 진행
+QOT Server1 접속가능 : 접속 실패
 QOT Server2 접속가능 : 접속 실패
 QOT Server1,2 접속가능 : 1,2번 둘다 접속
 
 
+
+typedef struct {
+    API_MODE api_mode;
+    int active_svr;
+    int ecode;
+    union {
+        void *p_local;
+        void **p_remote;
+    } svr;
+    int remote_svr_count;
+} QOT;
+
+
+typedef struct {
+    int active_svr;
+    union {
+        void **p_remote;
+    } svr;
+    int remote_svr_count;
+} QQ;
+
+
+
+multi-session
+#01. multi-session open
+#01-1. QotOpen 에서 배열로 정보 받는 것으로 변경
+#01-2. QOT 구조체 배열로 변경해서 저장장
+
+
+
+1 -> active
+2
+3
+4
