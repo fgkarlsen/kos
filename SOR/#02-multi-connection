@@ -226,8 +226,6 @@ typedef struct {
     int remote_svr_count;
 } QQ;
 
-
-
 multi-session
 #01. multi-session open
 #01-1. QotOpen 에서 배열로 정보 받는 것으로 변경
@@ -236,6 +234,3 @@ multi-session
 
 
 1 -> active
-2
-3
-4
