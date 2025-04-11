@@ -9,37 +9,3 @@ maker N|15|14|13
 default
 
 중간가(IOC) 주문 - 01
-
-어떤 수에서 321을 더했더니 796이 되었습니다.
-어떤 수에서 214를 빼면 얼마인지 구해 보세요.
-
-Q. 구하려는 것은 무엇인가요?
-
-Q. 어떤 방법으로 문제를 해결하면 좋을까요?
-
-Q. 어떤 수는 얼마일까요?
-
-Q. 어떤수에서 214를 빼면 얼마일까요?
-
-Q. 어떤 수에 145를 더했더니 698이 되었습니다.
-어떤수에서 412를 빼면 얼마인지 구해보세요.
-
-
-
-| Host      | User  | Password                                  
-| Select_priv | Insert_priv | Update_priv | Delete_priv | Create_priv | Drop_priv | Reload_priv | Shutdown_priv 
-| Process_priv | File_priv | Grant_priv | References_priv | Index_priv | Alter_priv | Show_db_priv | Super_priv 
-| Create_tmp_table_priv | Lock_tables_priv | Execute_priv | Repl_slave_priv | Repl_client_priv | Create_view_priv 
-| Show_view_priv | Create_routine_priv | Alter_routine_priv | Create_user_priv | Event_priv | Trigger_priv | ssl_type 
-| ssl_cipher | x509_issuer | x509_subject | max_questions | max_updates | max_connections | max_user_connections |
-
-
-`nameA` varchar(32) CHARACTER SET utf8mb4 NOT NULL,
-
-`nameC` varchar(32) CHARACTER SET gbk COLLATE gbk_bin NOT NULL, 이거는
-`nameC` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL, 이렇게 바꿔?
-
-
-ALTER TABLE 테이블이름
-MODIFY COLUMN nameA VARCHAR(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-MODIFY COLUMN nameC VARCHAR(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL;
