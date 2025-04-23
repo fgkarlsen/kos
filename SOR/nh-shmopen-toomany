@@ -4,3 +4,47 @@
 
 Check Log file 
 
+open_memory(const char* name, size_t size) {
+
+    int open_mode, prot_mode;
+
+    open_mode = RDWR;
+    prot_mode = PROT_READ | PROT_WRITE;
+
+    int fd = shm_open(name, open_mode, 0);
+    void *ptr = mmap(0, size, mode, MAP_SHARED, fd, 0);
+    if(ptr == (void *)-1) {
+        return (void *)0;
+    }
+    close(fd); // TODO
+
+    return ptr;
+}
+
+
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+
+void* open_memory(const char* name, size_t size) {
+    int open_mode, prot_mode;
+
+    open_mode = O_RDWR; // Use O_RDWR instead of RDWR
+    prot_mode = PROT_READ | PROT_WRITE;
+
+    int fd = shm_open(name, open_mode, 0666); // 0666 gives read and write permissions
+    if (fd == -1) {
+        return (void*)0; // Error opening shared memory
+    }
+
+    void* ptr = mmap(0, size, prot_mode, MAP_SHARED, fd, 0);
+    if (ptr == (void*)-1) {
+        close(fd); // Close fd on error
+        return (void*)0; // Error mapping shared memory
+    }
+
+    close(fd); // Close the file descriptor after mmap
+
+    return ptr;
+}

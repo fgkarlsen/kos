@@ -1,0 +1,52 @@
+M4전문은 skip
+
+체결
+A7전문으로 처리
+
+
+확인해보니 종목장운영 처리는 M4에서는 skip 하고 A7전문으로 처리하고 있습니다.
+해당시간대 mkops에서 6건의 Error가 발생하고 있는 것은 정상입니다.
+
+A7전문은 체결쪽에서 처리합니다.
+해당시간대 fill 로그에서 오류 건수가 있었을까요?
+
+
+
+추가작업
+내일 A7전문 수신확인
+
+
+
+
+# 거래소 전문 자체 테스트하는 방법
+1. ~/qot/data/market/A7_Test.dat 생성 후 다음의 내용으로 편집
+A751S00049741G140KR7000240002000099144453304749EH814445321700000X01
+종목코드 부분(KR7000240002)과 보드이벤트ID(EH8) 부분을 테스트하고자 하는 정보로 편집
+
+2. ~/qot/cmd/input_file.sh 를 이용하여  A7_Test.dat 파일테스트
+# ~/qot/cmd/input_file.sh ~/qot/data/market/A7_Test.dat
+
+3. api_tst로 위의 테스트 내용이 반영이 되었는지 확인
+# api_tst -> 종목코드입력 -> 2
+
+# 거래소 시세 로깅하는 방법
+recv_test.sh 의 12,13,14 라인에서 NIC IP 수정하여 실행하면 백그라운드로 처리됨
+~/qot/data/market/ 에 해당일자로 파일이 생성되고 내용이 생기는지 확인
+
+  1 #!/bin/bash
+  2
+  3 source ~/.uninfo
+  4 work_dir=$system_UNINFO_dir
+  5
+  6 $work_dir/cmd/kstop.sh ktestrecv all
+  7
+  8 cmd="$work_dir/bin/ktestrecv"
+  9 now=`date +%Y%m%d`
+ 10 filename="$work_dir/data/market/$now"
+ 11
+ 12 $cmd 21.102.1.240 239.29.30.18 21201 multi >> "${filename}_nxt_mkops.dat" &
+ 13 $cmd 21.102.1.240 239.29.30.41 21101 multi | grep -a "A7" >> "${filename}_nxt_kospi_fill.dat" &
+ 14 $cmd 21.102.1.240 239.29.30.41 21106 multi | grep -a "A7" >> "${filename}_nxt_kosdaq_fill.dat" &
+
+
+ 

@@ -1,0 +1,5 @@
+
+15라인에 LOG_DIR 처리하는 다음라인에 다음의 코드를 추가해볼수 있을까요?
+LOG_DIR="${LOG_DIR// }"
+
+echo $(grep "^[[:space:]]\LOG_DIR" "/app/ksor/eng/config/kSorEnv.txt" | sed 's/[[:space:]]*=[[:space:]]*/=/g' | cut -d '=' -f 2).
