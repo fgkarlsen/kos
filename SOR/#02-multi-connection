@@ -234,3 +234,94 @@ multi-session
 
 
 1 -> active
+
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+typedef struct {
+    char **ips;
+    int *ports;
+    size_t count;
+} ServerList;
+
+ServerList parse_server_list(const char *json_string) {
+    ServerList result;
+    memset(&result, 0, sizeof(ServerList));
+
+    struct json_object *root_object = json_tokener_parse(json_string);
+    if (root_object == NULL) {
+        fprintf(stderr, "JSON parse error\n");
+        return result;
+    }
+
+    struct json_object *info_object = json_object_object_get(root_object, "info");
+    struct json_object *svr_list_array_object = json_object_object_get(info_object, "svrList");
+
+    if (svr_list_array_object == NULL || json_object_get_type(svr_list_array_object) != json_type_array) {
+        fprintf(stderr, "not found svrList.ㅊㅇ
+            \n");
+        json_object_put(root_object); 
+        return result;
+    }
+
+    size_t server_count = json_array_length(svr_list_array_object);
+    result.count = server_count;
+
+    result.ips = (char **)malloc(sizeof(char *) * server_count);
+    result.ports = (int *)malloc(sizeof(int) * server_count);
+
+    if (result.ips == NULL || result.ports == NULL) {
+        fprintf(stderr, "malloc error.\n");
+        if (result.ips) free(result.ips);
+        if (result.ports) free(result.ports);
+        json_object_put(root_object);
+        return result;
+    }
+
+    for (size_t i = 0; i < server_count; i++) {
+        struct json_object *server_object = json_array_get_idx(svr_list_array_object, i);ㅖ@ㄴㄴ
+        struct json_object *ip_object = json_object_object_get(server_object, "ip");
+        struct json_object *port_object = json_object_object_get(server_object, "port");
+
+        if (ip_object == NULL || json_object_get_type(ip_object) != json_type_string ||
+            port_object == NULL || json_object_get_type(port_object) != json_type_int) {
+            fprintf(stderr, "not found ip or port.\n");
+
+            for (size_t j = 0; j < i; j++) {
+                free(result.ips[j]);
+            }
+            free(result.ips);
+            free(result.ports);
+            json_object_put(root_object);
+            result.ips = NULL;
+            result.ports = NULL;
+            result.count = 0;
+            return result;
+        }
+
+        const char *ip = json_object_get_string(ip_object);
+        int port = json_object_get_int(port_object);
+
+        result.ips[i] = strdup(ip);
+        if (result.ips[i] == NULL) {
+            fprintf(stderr, "strdup error\n");
+            for (size_t j = 0; j < i; j++) {
+                free(result.ips[j]);
+            }
+            free(result.ips);
+            free(result.ports);
+            json_object_put(root_object);
+            result.ips = NULL;
+            result.ports = NULL;
+            result.count = 0;
+            return result;
+        }
+        result.ports[i] = port;
+    }
+
+    json_object_put(root_object);
+    return result;
+}
