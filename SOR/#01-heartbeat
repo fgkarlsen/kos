@@ -52,3 +52,5 @@ heartbeat 통해서 커넥션에서 단일세션임에도 reconnect 잘하는지
 1st, 2nd 기동후 reopen 후 서비스가능
 
 # heartbeat 함수 제공
+
+
