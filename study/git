@@ -1,0 +1,53 @@
+workging directory
+staging area
+repository
+
+# commands
+git branch
+git status
+git remove -v
+git log -a
+git log --graph 
+git log --graph --all
+git diff staged      # diff HEAD-commit and staged
+git reset login.hash # cancel staging
+
+# job
+git pull origin release
+git switch -c feature/#1-login
+// job
+git add . or (files)
+git commit -m "message"
+git push origin feature/#1-login
+
+# delete local branch 
+git branch -d feature/#1-login
+
+# restore
+git restore --source=<commit hash to restore to> --worktree -- .
+
+# procedure for renaming a function in a merged branch and merge it again.
+git checkout feature/login
+// job
+git add
+git commit -m "message"
+git push origin fearure/login
+mr in at web page (must select target branch(ex. release))
+git switch release
+git pull origin release
+
+# git rebase
+git switch feature/login
+git rebase release
+
+# git reset rebase
+git reflog
+6b1sdv HEAD@{0}: rebase finish
+6b1sdv HEAD@{1}: rebase start
+4a4sd3 HEAD@{2}: checkout...
+git reset --hard 4a4sd3  or  git reset --hard HEAD@{2}
+
+
+# git stash
+git stash pop
+git stash clear
