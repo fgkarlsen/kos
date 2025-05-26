@@ -1,0 +1,109 @@
+3.1 소스 코드 보기
+    list 또는 l: 현재 위치 주변의 소스 코드를 보여줍니다. 인자 없이 사용하면 이전 list 명령어의 다음 부분을 보여줍니다.
+    list 10,20: 10행부터 20행까지의 소스 코드를 보여줍니다.
+    list main: main 함수의 소스 코드를 보여줍니다.
+
+3.2 중단점 설정 (Breakpoints)
+    stop at <line_number>: 특정 줄에서 중단합니다.
+    stop at 25: 25번째 줄에서 중단합니다.
+    stop in <function_name>: 특정 함수 진입 시 중단합니다.
+    stop in my_function: my_function 함수 시작 시 중단합니다.
+    stopi at <address>: 특정 주소에서 중단합니다 (기계어 수준 디버깅 시 유용).
+    stop if <condition>: 특정 조건이 참일 때 중단합니다.
+    stop if x == 10: 변수 x의 값이 10일 때 중단합니다.
+    status: 현재 설정된 모든 중단점, 트레이스, 감시점 등을 보여줍니다.
+    delete <breakpoint_number>: 특정 중단점을 삭제합니다.
+    delete 1: 1번 중단점을 삭제합니다.
+    delete all: 모든 중단점을 삭제합니다.
+
+3.3 프로그램 실행 제어
+    run: 프로그램을 실행합니다. 프로그램에 인자가 필요한 경우 run <arguments> 형식으로 전달합니다.
+    run arg1 arg2: myprogram을 arg1과 arg2 인자와 함께 실행합니다.
+    cont 또는 c: 중단점에서 멈춘 프로그램을 계속 실행합니다.
+    next 또는 n: 현재 줄을 실행하고 다음 소스 코드 줄로 이동합니다. 함수 호출은 한 단계로 건너뜁니다.
+    step 또는 s: 현재 줄을 실행하고 다음 소스 코드 줄로 이동합니다. 함수 호출 내부로 진입합니다.
+    stepi: 한 기계어 명령어를 실행하고 다음 명령어로 이동합니다 (어셈블리 수준 디버깅).
+    nexti: 한 기계어 명령어를 실행하고 다음 명령어로 이동합니다. 함수 호출은 건너뜁니다.
+    rerun: 프로그램을 처음부터 다시 실행합니다 (이전 인자를 사용하여).
+    kill: 실행 중인 프로그램을 종료합니다.
+    detach: dbx를 프로그램에서 분리하여 프로그램이 독립적으로 계속 실행되도록 합니다.
+
+3.4 변수 및 표현식 검사
+    print <variable_name>: 변수의 현재 값을 출력합니다.
+    print count: count 변수의 값을 출력합니다.
+    print array[i]: 배열 array의 i번째 요소 값을 출력합니다.
+    print *ptr: 포인터 ptr이 가리키는 값을 출력합니다.
+    whatis <identifier>: 식별자(변수, 함수 등)의 타입을 보여줍니다.
+    where 또는 w: 현재 호출 스택을 보여줍니다 (어떤 함수들이 어떤 순서로 호출되었는지).
+    up <n>: 호출 스택에서 n단계 위로 이동합니다.
+    down <n>: 호출 스택에서 n단계 아래로 이동합니다.
+    assign <variable> = <value>: 변수에 새로운 값을 할당합니다.
+    assign x = 100: x 변수에 100을 할당합니다.
+    display <variable>: 해당 변수가 변경될 때마다 자동으로 값을 출력하도록 설정합니다. (중단점이나 스텝 실행 후 변수값 변화를 추적할 때 유용)
+    undisplay <display_number>: display로 설정된 항목을 해제합니다.
+    dump: 현재 범위 내의 모든 지역 변수와 매개변수를 출력합니다.
+
+3.5 추적 (Tracing)
+    trace <line_number>: 특정 줄을 실행할 때마다 메시지를 출력합니다.
+    trace <variable>: 변수의 값이 변경될 때마다 메시지를 출력합니다.
+    trace in <function_name>: 함수에 진입할 때마다 메시지를 출력합니다.
+    trace <function_name> at <line_number>: 특정 함수 내의 특정 줄이 실행될 때마다 메시지를 출력합니다.
+
+3.6 기타 유용한 명령어
+    help: dbx 명령어에 대한 도움말을 표시합니다.
+    sh <command>: dbx 내부에서 쉘 명령어를 실행합니다.
+    sh ls -l: 현재 디렉토리의 파일 목록을 보여줍니다.
+    source <filename>: 파일에 저장된 dbx 명령어를 실행합니다. .dbxinit 또는 .dbxsetup 파일에 자주 사용하는 명령어를 넣어두면 dbx 시작 시 자동으로 실행됩니다.
+    quit 또는 q: dbx를 종료합니다.
+
+4. 디버깅 과정 예시
+    일반적인 디버깅 흐름은 다음과 같습니다.
+
+    문제 파악: 프로그램이 왜 오작동하는지 대략적인 원인을 추측합니다.
+    중단점 설정: 문제가 발생할 것으로 예상되는 코드 영역이나 특정 함수에 중단점을 설정합니다.
+    프로그램 실행: run 명령어로 프로그램을 실행합니다.
+    중단점 도달 시: 프로그램이 중단점에 도달하면 멈춥니다.
+    상태 확인: print, where, list 등의 명령어를 사용하여 변수 값, 호출 스택, 현재 코드 위치 등을 확인합니다.
+    단계별 실행: next 또는 step 명령어를 사용하여 한 줄씩 실행하면서 변수 값의 변화나 프로그램 흐름을 추적합니다.
+    조정 및 반복: 문제의 원인을 발견하면 코드를 수정하고, 다시 컴파일한 후 디버깅 과정을 반복합니다.
+
+
+
+
+함수로 이동하기
+1. 현재 실행 중 중단된 함수에서 다른 함수 프레임으로 이동
+프로그램이 중단점(breakpoint)에 도달하거나 시그널(signal)을 받아 멈췄을 때, dbx는 현재 실행 중인 함수의 스택 프레임에 위치합니다. 이 상태에서 현재 함수를 호출한 상위 함수나 다른 스택 프레임으로 이동하여 해당 함수의 지역 변수나 상태를 확인하고 싶을 때 사용하는 방법입니다.
+
+호출 스택 확인:
+가장 먼저 where 또는 w 명령어를 사용하여 현재 호출 스택을 확인합니다. 이 명령어는 프로그램이 현재 위치에 도달하기까지 어떤 함수들이 어떤 순서로 호출되었는지를 보여줍니다. 각 함수 앞에는 스택 프레임 번호가 붙어 있습니다 (일반적으로 0번이 가장 최근 호출된 함수, 숫자가 커질수록 상위 호출 함수).
+
+(dbx) where
+(0)  my_current_function(arg1=10, arg2=20) at myprogram.c:50
+(1)  caller_function_A(value=5) at myprogram.c:120
+(2)  main() at myprogram.c:200
+
+(dbx) up
+(dbx) up 2
+(dbx) down
+(dbx) frame 1
+list/print
+
+2. 특정 함수 시작 지점에 중단점을 설정하여 진입
+프로그램이 아직 실행되지 않았거나, 실행 중이더라도 특정 함수가 호출될 때 그 함수 시작 지점에서 멈추게 하고 싶을 때 사용하는 방법입니다.
+
+함수 이름으로 중단점 설정:
+가장 일반적인 방법으로, 함수의 이름으로 중단점을 설정합니다. 프로그램이 해당 함수를 호출하여 진입하는 순간 멈춥니다.
+
+(dbx) stop in my_problematic_function
+(dbx) stop in my_file.c:my_problematic_function
+(dbx) run
+list / next / step
+
+(dbx) use /path/to/your/source/code
+(dbx) use .  # 현재 디렉토리를 소스 경로로 추가 (혹시 빠졌을 경우)
+
+설정된 breakpoints 확인
+(dbx) status
+
+exit function
+(dbx) return
