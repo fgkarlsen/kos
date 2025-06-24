@@ -1,0 +1,19 @@
+서버와 클라이언트가 있어.
+typedef struct {
+    char zZ[3+1];
+} O;
+
+typedef struct {
+    O oO[2+1];
+} OO;
+
+
+여기서 만약 서버만 
+O가 다음과 같이 변경이 되었고, 이렇게 응답을 주고 있어.
+typedef struct {
+    char zZ[3+1];
+    long lL;
+} O;
+
+
+그러면 클라이언트에서 OO로 처리하는데 문제가 생길까?

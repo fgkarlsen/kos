@@ -1,0 +1,6 @@
+a.so 라이브러리가 있어.
+이안에는 open 함수, g_errcd global 변수가 있어.
+connection pool에서 open을 하고 connection 5개를 맺고 있을거야.
+이때 open 이 안되면 g_errcd에 -100을 할당해.
+그리고 open 함수 내에서 g_errcd를 이용해서 log를 남겨.
+이때 문제가 될소지가 있을까?

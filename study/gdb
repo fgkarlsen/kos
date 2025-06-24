@@ -27,3 +27,7 @@ detach: GDB에서 디버깅 중인 프로세스를 분리하고 계속 실행하
 break <위치> if <조건>
 break <파일_이름>:<라인_번호> if strcmp(변수_이름, "찾을_문자열") == 0
 break test.c:200 if strcmp(input_string, "error") == 0
+
+info break
+disable 1.2 # disable break point
+

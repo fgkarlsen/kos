@@ -5,12 +5,26 @@ repository
 # commands
 git branch
 git status
-git remove -v
+git remote -v
 git log -a
 git log --graph 
 git log --graph --all
-git diff staged      # diff HEAD-commit and staged
-git reset login.hash # cancel staging
+git show <commit hash> # 커밋에 어떤 변경이 있었는지 직접 확인
+git diff --staged        # diff HEAD-commit and staged
+git diff HEAD^ HEAD      # 마지막 커밋이 실제로 뭔가 적용됐는지 확인1
+git diff <커밋해시> HEAD # 마지막 커밋이 실제로 뭔가 적용됐는지 확인2
+
+
+#rename
+git branch -m <new-branch-name>
+git branch -m <old-branch-name> <new-branch-name>
+
+
+# 되돌리는 방법
+git reset login.hash     # cancel staging, local 에서만 작업. or 혼자.
+git restore; push 이후
+git revert; push 한 이후. step down
+
 
 # job
 git pull origin release
@@ -29,16 +43,22 @@ git restore --source=<commit hash to restore to> --worktree -- .
 # procedure for renaming a function in a merged branch and merge it again.
 git checkout feature/login
 // job
-git add
+git add # 현재 feature에 필요한 파일만 add하고 commit 한다. 기능적으로 다른 feature면 따로 add, commit 한다.
 git commit -m "message"
 git push origin fearure/login
 mr in at web page (must select target branch(ex. release))
 git switch release
 git pull origin release
 
-# git rebase
+# git rebase ; 조금 더 "깨끗한 히스토리"를 만들고 싶을 때 유용
+# B 브랜치의 커밋들을 release 브랜치 위에 다시 얹는(rebase) 방식으로 사용
 git switch feature/login
-git rebase release
+git rebase --onto release <B-기준-포인트> B # <B-기준-포인트>는 B 브랜치를 만들었던 기준 커밋 (예: release에서 분기한 시점)
+ex. git rebase --onto release 1234abcd B
+git checkout release
+git merge B   # Fast-forward merge 가능
+
+
 
 # git reset rebase
 git reflog
@@ -51,3 +71,56 @@ git reset --hard 4a4sd3  or  git reset --hard HEAD@{2}
 # git stash
 git stash pop
 git stash clear
+
+
+# 과거 commit으로 restore하여 특정 브랜치의 병합이 빠졌있는 상태 해결 방법
+방법1. 브랜치를 새 브랜치로 새로 따서 merge
+git switch B
+git switch -c B_reapply
+git switch release
+git merge B_reapply
+
+방법2. 
+git switch B
+git log --oneline      # B 브랜치 커밋 확인
+git switch release
+git cherry-pick <커밋해시>   # 원하는 커밋 하나씩 적용
+
+
+방법3.
+git switch B           # cherrypick 대상 branch로 이동
+git log --oneline      # B 브랜치 commit hash 확인
+git switch release
+git switch -c feature/#5-something
+git cherry-pick <커밋해시>
+git add .
+git commit 
+git push feature/#5-something
+MR/PR
+
+
+
+# feature 작업중 작업을 stash하고 release에서 cherry-pick 을하고 release_pb 기준으로 feature을 맞춘다음 stash pop - BEGIN
+git switch feature
+git stash
+
+git switch release
+git pull origin release
+
+git switch release_pb
+git cherry-pick 
+
+git push origin release_pb
+
+git switch feature
+git rebase release_pb # cherry-pick한 release_pb 기준으로 레벨을 맞춰줌
+
+git stash pop
+# feature 작업중 작업을 stash하고 release에서 cherry-pick 을하고 release_pb 기준으로 feature을 맞춘다음 stash pop -  END
+
+
+# 브랜치 내에서 특정 commit-hash 으로 이동해서 확인작업 후 다시 원래 commit-hash로 돌아가는 방법
+git switch <commit-hash>
+작업
+git switch -
+
