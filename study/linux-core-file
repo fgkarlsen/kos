@@ -1,0 +1,47 @@
+* 코어 덤프 활성화 작업 (root 권한 필요)
+
+✅ 1단계: 코어 덤프 활성화 확인
+# ulimit -c
+0: 비활성
+unlimited: 활성
+→ 비활성인 경우 다음 단계 진행
+
+✅ 2단계: 코어 파일 형식 설정
+# vi /proc/sys/kernel/core_pattern
+→ core.%e.%p.%h.%t.%s
+
+# echo 'kernel.core_pattern = core.%e.%p.%h.%t.%s' | sudo tee -a /etc/sysctl.conf
+
+✅ 3단계: 사용자 권한 및 limit 설정 후 적용
+# sudo vi /etc/security/limits.conf 
+→ ksor    -    core    unlimited # 맨앞에 계정 넣음 (전체는 *)
+
+# sudo sysctl -p          # 설정적용
+
+✅ 4단계: 코어 적용 테스트
+재접속 후 
+# ulimit -c
+→ unlimited가 나오면 성공
+
+✅ 5단계: 코어 생성 확인 테스트
+→ 다음 소스 생성
+// crash.c
+#include <stdio.h>
+int main() {
+    int *p = NULL;
+    *p = 1;  // segmentation fault
+    return 0;
+}
+
+→ 컴파일
+# gcc -o crash crash.c
+
+→ 실행
+# ./crash
+
+→ core 파일 생성 확인
+# ls core*
+# ex. core.crash.<pid>.<host>.<time>
+
+
+

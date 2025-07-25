@@ -124,3 +124,40 @@ git switch <commit-hash>
 작업
 git switch -
 
+
+
+# rs 브랜치의 release - commit을 가져오는 방법
+1. 가져오려는 브랜치의 이름을 확인
+git branch -a
+> remote/origin/release
+
+2. 가져오려는 commit 확인
+git log remote/origin/release
+
+3. 가져오려는 commit이 없으면 local에 remote 정보를 업데이트
+git fetch origin 
+
+4. 가져오려는 commit 다시 확인
+git log remote/origin/release
+
+5. 확인이 되면 feature branch 추가 후 cherry-pick 진행
+관리페이지에서 feature 번호 확인후 채번
+git switch -c feature/#12-kproc-fix
+git cherry-pick <commit-hash>
+
+6. commit 확인
+git log
+
+7. feature push
+git push origin feature/#12-kproc-fix
+
+8. git log 확인
+
+9. 관리페이지에서 mr -> release_pb 진행
+
+10. feature pull
+
+11. switch release_pb -> pull
+
+12. 반영 확인
+
