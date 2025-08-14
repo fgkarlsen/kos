@@ -129,16 +129,16 @@ git switch -
 # rs 브랜치의 release - commit을 가져오는 방법
 1. 가져오려는 브랜치의 이름을 확인
 git branch -a
-> remote/origin/release
+> remotes/origin/release
 
 2. 가져오려는 commit 확인
-git log remote/origin/release
+git log remotes/origin/release
 
 3. 가져오려는 commit이 없으면 local에 remote 정보를 업데이트
 git fetch origin 
 
 4. 가져오려는 commit 다시 확인
-git log remote/origin/release
+git log remotes/origin/release
 
 5. 확인이 되면 feature branch 추가 후 cherry-pick 진행
 관리페이지에서 feature 번호 확인후 채번
@@ -160,4 +160,14 @@ git push origin feature/#12-kproc-fix
 11. switch release_pb -> pull
 
 12. 반영 확인
+
+
+
+
+# 특정브랜치로부터 파일 가져오기
+~/ats/cmd> git restore --source=remotes/origin/release kmon.sh
+
+
+# 현재 브랜치의 HEAD 파일 가져오기
+~/ats/cmd> git restore kmon.sh
 
