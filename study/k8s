@@ -1,0 +1,107 @@
+
+Windows PC (인터넷 가능)
+필요한 K8s 바이너리, rpm 패키지, 컨테이너 이미지, CNI yaml을 다운로드
+USB/NAS 등을 통해 RHEL 서버로 전달
+
+RHEL 서버 (인터넷 불가)
+Windows에서 옮긴 파일들로 로컬 repo 구성 + 이미지 import + kubeadm init
+
+
+####################################################################################################################################
+📌 윈도우 PC에서 준비해야 할 것
+1. Kubernetes RPM 패키지
+윈도우는 yum download 같은 걸 못 쓰니까, 보통 2가지 방법이 있습니다:
+방법 A: Kubernetes 공식 repo 사이트에서 rpm 직접 다운로드
+방법 B: Docker Desktop for Windows + rockylinux 컨테이너 띄우고, 거기서 dnf download --resolve로 rpm 모으기
+👉 방법 A가 간단하지만, 의존성 패키지(runc, socat 등)도 같이 챙겨야 해서 보통 **방법 B(컨테이너 안에서 다운로드)**가 더 현실적이에요.
+
+2. Container Runtime (containerd)
+containerd 공식 RPM 파일 받아야 함
+containerd.io RPM 다운로드
+(RHEL 8 계열이라면 containerd.io-*.el8.x86_64.rpm)
+
+3. Kubernetes 이미지
+윈도우 PC에서는 Docker Desktop 설치 후 이미지 pull → tar export 해서 옮기면 됩니다.
+예:
+# Docker Desktop PowerShell에서 실행
+$images = @(
+ "registry.k8s.io/kube-apiserver:v1.30.3",
+ "registry.k8s.io/kube-controller-manager:v1.30.3",
+ "registry.k8s.io/kube-scheduler:v1.30.3",
+ "registry.k8s.io/kube-proxy:v1.30.3",
+ "registry.k8s.io/pause:3.9",
+ "registry.k8s.io/etcd:3.5.9-0",
+ "registry.k8s.io/coredns/coredns:v1.11.1"
+)
+
+foreach ($img in $images) {
+  docker pull $img
+  $tarName = $img.Replace("/", "_").Replace(":", "_") + ".tar"
+  docker save $img -o $tarName
+}
+
+→ 이렇게 하면 .tar 파일이 생깁니다.
+→ USB로 옮겨서 RHEL에서 ctr -n k8s.io images import XXX.tar 로 불러오면 됩니다.
+
+4. CNI 플러그인
+예: flannel
+Invoke-WebRequest -Uri https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml -
+
+####################################################################################################################################
+
+📌 RHEL 서버에서 해야 할 것 (오프라인 설치)
+
+옮겨온 RPM으로 로컬 repo 구성
+
+mkdir -p /opt/k8s/rpms
+cp /media/usb/*.rpm /opt/k8s/rpms/
+
+cat <<EOF | sudo tee /etc/yum.repos.d/k8s-local.repo
+[k8s-local]
+name=Kubernetes Offline Repo
+baseurl=file:///opt/k8s/rpms
+enabled=1
+gpgcheck=0
+EOF
+
+sudo dnf clean all
+sudo dnf makecache
+
+
+패키지 설치
+
+sudo dnf install -y kubelet kubeadm kubectl containerd.io
+sudo systemctl enable --now kubelet containerd
+
+
+이미지 import
+
+for img in /media/usb/*.tar; do
+  ctr -n k8s.io images import $img
+done
+
+
+Master 초기화
+
+sudo kubeadm init --pod-network-cidr=10.244.0.0/16 --kubernetes-version=v1.30.3
+
+
+CNI 적용
+
+kubectl apply -f kube-flannel.yml
+
+
+✅ 이렇게 하면 윈도우 PC(인터넷) → USB → RHEL(폐쇄망) 경로로 설치가 가능합니다.
+
+####################################################################################################################################
+
+
+사전 준비 (인터넷 되는 PC에서)
+RHEL repo mirror (또는 필요한 rpm 패키지 다운로드)
+Kubernetes 바이너리 (kubeadm, kubelet, kubectl) rpm 다운로드
+container runtime (containerd 또는 cri-o) rpm 다운로드
+K8s가 필요한 container image (kube-apiserver, kube-controller-manager, pause, etcd, coredns, CNI 플러그인 등)
+네트워크 플러그인 (flannel, calico 등) yaml 파일
+
+내부망에서
+위에서 옮겨온 repo / rpm / 이미지 / yaml을 사용해 설치
