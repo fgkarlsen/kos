@@ -1,0 +1,67 @@
+시스템일자,영업일자,오늘영업일 구분
+ftp로 수신
+영업일자는 몇시에 반영이 될까?
+
+
+# 환경변수추가 SOR_ENV_TYPE=PB
+SOR_ENV_TYPE 없으면 기존처리
+SOR_ENV_TYPE 있으면 일자/시간처리
+
+제공받는 파일의 영업일이 언제 변경되는지 확인
+
+
+#!/bin/bash
+
+# 초기화
+TODAY=$(date +%Y%m%d)
+CONFIG_FILE="config_${TODAY}.txt"
+
+# 파일 없으면 기본값 처리
+if [ ! -f "$CONFIG_FILE" ]; then
+    echo "⚠️  오늘 파일 없음, 어제 파일 사용"
+    YESTERDAY=$(date -d "yesterday" +%Y%m%d)
+    CONFIG_FILE="config_${YESTERDAY}.txt"
+fi
+
+# 최초 로드
+CONFIG=$(<"$CONFIG_FILE")
+echo "📄 초기 설정값 로드: $CONFIG_FILE -> $CONFIG"
+
+while true; do
+    # 현재 날짜 확인
+    NEW_TODAY=$(date +%Y%m%d)
+
+    # 날짜가 바뀌었으면 새 파일 로드
+    if [ "$NEW_TODAY" != "$TODAY" ]; then
+        TODAY=$NEW_TODAY
+        CONFIG_FILE="config_${TODAY}.txt"
+
+        if [ -f "$CONFIG_FILE" ]; then
+            CONFIG=$(<"$CONFIG_FILE")
+            echo "🔄 날짜 변경 감지 → 새 설정 로드: $CONFIG_FILE -> $CONFIG"
+        else
+            echo "⚠️  새 파일 없음, 이전 설정 유지"
+        fi
+    fi
+
+    # 10초마다 수행할 작업
+    echo "➡️ 현재 설정값 사용 중: $CONFIG"
+    # 여기서 $CONFIG를 이용해 필요한 작업 수행
+    sleep 10
+done
+
+
+
+
+sweep order
+Passive order
+Aggressive order
+close auction
+opening auction
+
+
+
+
+
+
+

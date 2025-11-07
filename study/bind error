@@ -1,0 +1,71 @@
+① 아직 다른 프로세스가 그 포트를 LISTEN 중
+
+SO_REUSEADDR은 TIME_WAIT 상태 소켓에는 유효하지만,
+아직 다른 프로세스가 bind 중인 LISTEN 소켓에는 절대 적용되지 않습니다.
+
+🔍 확인:
+sudo lsof -i:<포트번호>
+# 또는
+sudo netstat -tulpn | grep <포트번호>
+
+
+결과 예시:
+
+tcp   0   0 0.0.0.0:8080   0.0.0.0:*   LISTEN   1234/myserver
+
+
+→ PID 1234가 아직 점유 중. 프로세스가 완전히 종료되지 않았거나 좀비 상태일 수 있습니다.
+
+해결:
+해당 PID kill
+
+sudo kill -9 1234
+
+② 동일 IP:Port 조합 중복 bind 시도
+
+리눅스는 SO_REUSEADDR이라도 이미 활성 LISTEN 상태가 있으면 거부합니다.
+
+특히 0.0.0.0:포트로 바인드한 경우,
+다른 인터페이스(IP)로 동일 포트를 bind하려 해도 충돌합니다.
+
+예:
+
+bind(sock1, 0.0.0.0:8080)
+bind(sock2, 127.0.0.1:8080)   // 실패
+
+
+해결:
+특정 IP만 바인드하거나,
+다중 바인드를 해야 한다면 SO_REUSEPORT 추가 사용:
+
+int opt = 1;
+setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+setsockopt(sock, SOL_SOCKET, SO_REUSEPORT, &opt, sizeof(opt));
+
+③ 커널에 TIME_WAIT 연결이 남음
+
+프로세스는 종료됐지만, 커널이 TCP 연결을 TIME_WAIT 상태로 유지합니다.
+→ 보통 1~4분 지속.
+
+🔍 확인:
+sudo netstat -ant | grep <포트번호>
+
+
+예시:
+
+tcp  0  0 127.0.0.1:8080   127.0.0.1:45000   TIME_WAIT
+
+
+이 경우 SO_REUSEADDR 옵션이 서버 소켓에는 적용돼서 bind 가능해야 하지만,
+가끔 클라이언트 소켓이 서버와 같은 포트로 바인드 시도하는 경우(예: 테스트 코드 등)에는 여전히 거절당합니다.
+
+🔧 추가 체크 (리눅스 커널 파라미터)
+
+net.ipv4.tcp_tw_reuse와 tcp_tw_recycle 설정 확인:
+
+sysctl net.ipv4.tcp_tw_reuse
+
+
+tcp_tw_reuse = 1이면 TIME_WAIT 재사용 가능 (클라이언트 측에만 해당)
+
+서버 측에는 SO_REUSEADDR이 주로 관여합니다.

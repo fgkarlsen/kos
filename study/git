@@ -2,6 +2,10 @@ workging directory
 staging area
 repository
 
+# git 환경설정 - 나만의 테스트 디렉토리 작업시
+.git/info/exclude 파일에 나만의 테스트 디렉토리 넣어주기
+
+
 # commands
 git branch
 git status
@@ -59,7 +63,7 @@ git checkout release
 git merge B   # Fast-forward merge 가능
 
 
-
+106
 # git reset rebase
 git reflog
 6b1sdv HEAD@{0}: rebase finish
@@ -102,7 +106,7 @@ MR/PR
 
 # feature 작업중 작업을 stash하고 release에서 cherry-pick 을하고 release_pb 기준으로 feature을 맞춘다음 stash pop - BEGIN
 git switch feature
-git stash
+git stas
 
 git switch release
 git pull origin release
@@ -110,7 +114,8 @@ git pull origin release
 git switch release_pb
 git cherry-pick 
 
-git push origin release_pb
+git push origin release_pb:ㅂ
+
 
 git switch feature
 git rebase release_pb # cherry-pick한 release_pb 기준으로 레벨을 맞춰줌
@@ -169,5 +174,5 @@ git push origin feature/#12-kproc-fix
 
 
 # 현재 브랜치의 HEAD 파일 가져오기
-~/ats/cmd> git restore kmon.sh
+~/ats/cmd> git restore kmon.sh 
 
